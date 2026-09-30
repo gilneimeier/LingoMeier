@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LingoMaster - Múltiplos Usuários com IA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-full flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- LOGIN MODAL / SELEÇÃO DE USUÁRIO -->
+    <div id="user-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
+            <div class="w-16 h-16 bg-indigo-600 text-white rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-lg shadow-indigo-600/30">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-white">Bem-vindo ao LingoMaster</h2>
+                <p class="text-slate-400 text-sm mt-1">Insira seu nome de usuário para carregar seu perfil independente.</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="username-input" placeholder="Seu nome (ex: Gilnei, Bernardo...)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm text-center font-medium">
+                <button onclick="loginUser()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+                    <span>Entrar no Meu Perfil</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500">Cada usuário possui dados, moedas e histórico próprios.</p>
+        </div>
+    </div>
+
+    <!-- Top Navbar -->
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center">
+                <i class="fa-solid fa-graduation-cap text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">LingoMaster AI</h1>
+                <p id="current-user-display" class="text-xs text-indigo-300 font-semibold">Usuário: Convidado</p>
+            </div>
+        </div>
+
+        <!-- Gamification Stats -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700 text-sm">
+                <i class="fa-solid fa-fire text-orange-500 animate-pulse"></i>
+                <span id="stat-streak" class="font-bold text-orange-400">5 dias</span>
+            </div>
+            <div class="flex items-center space-x-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700 text-sm">
+                <i class="fa-solid fa-coins text-amber-400"></i>
+                <span id="stat-coins" class="font-bold text-amber-300">240</span>
+            </div>
+            <div class="flex items-center space-x-1.5 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-700 text-sm">
+                <i class="fa-solid fa-star text-indigo-400"></i>
+                <span id="stat-xp" class="font-bold text-indigo-300">1.250 XP</span>
+            </div>
+            <button onclick="logoutUser()" title="Trocar Usuário" class="text-slate-400 hover:text-white bg-slate-900/80 p-2 rounded-full border border-slate-700">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container Layout -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-800/50 border-r border-slate-700/80 p-4 flex flex-col justify-between hidden md:flex">
+            <nav class="space-y-1.5">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+                    <i class="fa-solid fa-house w-5"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchTab('modules')" id="nav-modules" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all text-slate-300 hover:bg-slate-700/50 hover:text-white">
+                    <i class="fa-solid fa-book-open w-5"></i>
+                    <span>Módulos</span>
+                </button>
+                <button onclick="switchTab('flashcards')" id="nav-flashcards" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all text-slate-300 hover:bg-slate-700/50 hover:text-white">
+                    <i class="fa-solid fa-clone w-5"></i>
+                    <span>Flashcards</span>
+                </button>
+                <button onclick="switchTab('chat')" id="nav-chat" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all text-slate-300 hover:bg-slate-700/50 hover:text-white">
+                    <i class="fa-solid fa-comments w-5 text-emerald-400"></i>
+                    <span class="flex items-center justify-between w-full">Chat com IA <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded-full border border-emerald-500/30 font-semibold">Independente</span></span>
+                </button>
+                <button onclick="switchTab('shop')" id="nav-shop" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all text-slate-300 hover:bg-slate-700/50 hover:text-white">
+                    <i class="fa-solid fa-store w-5"></i>
+                    <span>Loja</span>
+                </button>
+            </nav>
+
+            <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700 text-xs text-slate-400">
+                <p class="font-semibold text-slate-200 mb-1"><i class="fa-solid fa-circle-info text-indigo-400 mr-1.5"></i> Multiusuário</p>
+                Seus dados são salvos de forma independente para o seu perfil selecionado.
+            </div>
+        </aside>
+
+        <!-- Main Content View Area -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-900">
+
+            <!-- TAB 1: DASHBOARD -->
+            <section id="tab-dashboard" class="space-y-6 max-w-5xl mx-auto">
+                <div class="bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-slate-800 border border-indigo-500/30 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="bg-indigo-500/20 text-indigo-300 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/30 uppercase tracking-wider">Nível Intermediário (B1)</span>
+                        <h2 id="welcome-title" class="text-2xl md:text-3xl font-bold mt-3 text-white">Welcome back! 👋</h2>
+                        <p class="text-slate-300 mt-1 max-w-xl text-sm md:text-base">Continue seus estudos diários, pratique com a IA e alcance a fluência.</p>
+                        
+                        <div class="mt-6 flex flex-wrap gap-4">
+                            <button onclick="switchTab('chat')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-2">
+                                <i class="fa-solid fa-comments text-emerald-300"></i>
+                                <span>Abrir Chat com IA</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-slate-300 text-sm">Meta Diária</h3>
+                            <span class="text-xs text-indigo-400 font-medium">3/4 Lições</span>
+                        </div>
+                        <div class="w-full bg-slate-700 h-3 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style="width: 75%"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center text-xl border border-emerald-500/30">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-slate-400">Precisão Média</h4>
+                            <p class="text-2xl font-bold text-white">88.5%</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/60 border border-slate-700 rounded-2xl p-5 flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-purple-500/20 text-purple-400 rounded-2xl flex items-center justify-center text-xl border border-purple-500/30">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-medium text-slate-400">Ranking Global</h4>
+                            <p class="text-2xl font-bold text-white">Top 5%</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: MÓDULOS -->
+            <section id="tab-modules" class="space-y-6 max-w-5xl mx-auto hidden">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Módulos de Aprendizado</h2>
+                    <p class="text-slate-400 text-sm">Conclua lições para acumular XP e moedas no seu perfil.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-2xl p-6 hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <span class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-500/30">Iniciante</span>
+                            <h3 class="text-xl font-bold text-white mt-3 mb-2">Fundamentos de Vocabulário</h3>
+                            <p class="text-slate-300 text-sm mb-4">Palavras e expressões essenciais para o dia a dia.</p>
+                        </div>
+                        <button onclick="startLesson('Vocabulário Essencial')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl transition-all">Iniciar Lição</button>
+                    </div>
+
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-2xl p-6 hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <span class="bg-amber-500/20 text-amber-300 text-xs font-semibold px-3 py-1 rounded-full border border-amber-500/30">Intermediário</span>
+                            <h3 class="text-xl font-bold text-white mt-3 mb-2">Phrasal Verbs Avançados</h3>
+                            <p class="text-slate-300 text-sm mb-4">Domine os verbos compostos mais utilizados por nativos.</p>
+                        </div>
+                        <button onclick="startLesson('Phrasal Verbs')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-xl transition-all">Iniciar Lição</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: FLASHCARDS -->
+            <section id="tab-flashcards" class="space-y-6 max-w-3xl mx-auto hidden">
+                <div class="text-center">
+                    <h2 class="text-2xl font-bold text-white">Flashcards de Memorização</h2>
+                    <p class="text-slate-400 text-sm">Clique no cartão para revelar a tradução e ouvir a pronúncia correta.</p>
+                </div>
+
+                <div class="perspective-1000 w-full h-80 cursor-pointer" onclick="flipCard()">
+                    <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d shadow-2xl rounded-2xl">
+                        <div class="absolute inset-0 backface-hidden bg-slate-800 border border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                            <span class="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-3">Inglês</span>
+                            <h3 id="fc-front" class="text-3xl md:text-4xl font-bold text-white mb-4">To break the ice</h3>
+                        </div>
+                        <div class="absolute inset-0 backface-hidden bg-indigo-900/90 border border-indigo-500/40 rounded-2xl p-8 flex flex-col items-center justify-center text-center rotate-y-180">
+                            <span class="text-xs font-semibold text-indigo-300 uppercase tracking-widest mb-3">Português</span>
+                            <h3 id="fc-back" class="text-3xl md:text-4xl font-bold text-white mb-2">Quebrar o gelo</h3>
+                            <p id="fc-example" class="text-indigo-200 text-sm italic mb-4">"He told a joke to break the ice."</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center space-x-4">
+                    <button onclick="prevCard()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl border border-slate-700 font-medium">Anterior</button>
+                    <button onclick="speakCurrentCard()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium"><i class="fa-solid fa-volume-high mr-2"></i> Ouvir Áudio</button>
+                    <button onclick="nextCard()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl border border-slate-700 font-medium">Próximo</button>
+                </div>
+            </section>
+
+            <!-- TAB 4: CHAT COM IA -->
+            <section id="tab-chat" class="space-y-4 max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col hidden">
+                <div class="flex justify-between items-center bg-slate-800/60 p-4 rounded-2xl border border-slate-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center text-lg border border-emerald-500/30">
+                            <i class="fa-solid fa-language"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-white text-base">LingoBot (IA Independente)</h2>
+                            <p class="text-xs text-slate-400">Tradução, correção de erros e áudio salvos no seu perfil</p>
+                        </div>
+                    </div>
+                    <button onclick="clearChat()" class="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg transition-all">Limpar Conversa</button>
+                </div>
+
+                <!-- Chat Messages Box -->
+                <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 pr-2 bg-slate-800/30 p-4 rounded-2xl border border-slate-800">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-sm flex-shrink-0 border border-emerald-500/30">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bg-slate-800 border border-slate-700 text-slate-200 p-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[80%] shadow-md flex flex-col space-y-1.5">
+                            <p class="font-medium text-white">Hello! Ask me any translation, word meaning, or practice conversation with grammar correction!</p>
+                            <p class="text-xs text-indigo-300 italic border-t border-slate-700/80 pt-1.5">💡 Tradução: Olá! Me peça qualquer tradução, significado de palavra ou pratique conversação com correção gramatical!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Box & Voice Controls -->
+                <div class="flex items-center space-x-2 pt-2">
+                    <button id="mic-btn" onclick="toggleSpeechRecognition()" title="Falar por voz" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 px-4 py-3 rounded-xl transition-all flex items-center justify-center">
+                        <i id="mic-icon" class="fa-solid fa-microphone text-lg"></i>
+                    </button>
+                    <input type="text" id="chat-input" placeholder="Digite sua dúvida ou frase em inglês..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm shadow-inner" onkeypress="handleChatKey(event)">
+                    <button onclick="sendChatMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl font-medium transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- TAB 5: LOJA -->
+            <section id="tab-shop" class="space-y-6 max-w-4xl mx-auto hidden">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Loja de Recompensas</h2>
+                    <p class="text-slate-400 text-sm">Gaste as moedas acumuladas no seu perfil.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-2xl p-5 text-center">
+                        <div class="w-16 h-16 bg-orange-500/20 text-orange-400 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 border border-orange-500/30">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-lg">Congelamento de Ofensiva</h3>
+                        <button onclick="buyItem(150)" class="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-sm transition-all">150 Moedas</button>
+                    </div>
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-2xl p-5 text-center">
+                        <div class="w-16 h-16 bg-indigo-500/20 text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 border border-indigo-500/30">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-lg">Poção de XP Dobrado</h3>
+                        <button onclick="buyItem(200)" class="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-sm transition-all">200 Moedas</button>
+                    </div>
+                    <div class="bg-slate-800/70 border border-slate-700 rounded-2xl p-5 text-center">
+                        <div class="w-16 h-16 bg-purple-500/20 text-purple-400 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-4 border border-purple-500/30">
+                            <i class="fa-solid fa-crown"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-lg">Insígnia Lendária</h3>
+                        <button onclick="buyItem(500)" class="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded-xl text-sm transition-all">500 Moedas</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden bg-slate-800 border-t border-slate-700 flex justify-around p-3">
+        <button onclick="switchTab('dashboard')" class="text-indigo-400 flex flex-col items-center text-xs space-y-1"><i class="fa-solid fa-house text-lg"></i><span>Início</span></button>
+        <button onclick="switchTab('modules')" class="text-slate-400 hover:text-white flex flex-col items-center text-xs space-y-1"><i class="fa-solid fa-book-open text-lg"></i><span>Módulos</span></button>
+        <button onclick="switchTab('flashcards')" class="text-slate-400 hover:text-white flex flex-col items-center text-xs space-y-1"><i class="fa-solid fa-clone text-lg"></i><span>Cards</span></button>
+        <button onclick="switchTab('chat')" class="text-slate-400 hover:text-white flex flex-col items-center text-xs space-y-1"><i class="fa-solid fa-comments text-lg text-emerald-400"></i><span>Chat IA</span></button>
+        <button onclick="switchTab('shop')" class="text-slate-400 hover:text-white flex flex-col items-center text-xs space-y-1"><i class="fa-solid fa-store text-lg"></i><span>Loja</span></button>
+    </nav>
+
+    <!-- JavaScript App Logic & Multiuser Management -->
+    <script>
+        let currentUser = null;
+        let userData = { streak: 5, coins: 240, xp: 1250 };
+
+        // Verifica se já existe usuário salvo no navegador ao abrir
+        window.onload = function() {
+            const savedUser = localStorage.getItem('lingo_current_user');
+            if (savedUser) {
+                currentUser = savedUser;
+                loadUserData();
+                document.getElementById('user-modal').classList.add('hidden');
+            }
+        };
+
+        function loginUser() {
+            const input = document.getElementById('username-input');
+            const name = input.value.trim();
+            if (!name) {
+                alert('Por favor, digite um nome de usuário válido.');
+                return;
+            }
+
+            currentUser = name;
+            localStorage.setItem('lingo_current_user', currentUser);
+            loadUserData();
+            document.getElementById('user-modal').classList.add('hidden');
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('lingo_current_user');
+            currentUser = null;
+            document.getElementById('user-modal').classList.remove('hidden');
+            document.getElementById('username-input').value = '';
+        }
+
+        function loadUserData() {
+            document.getElementById('current-user-display').innerText = `Usuário: ${currentUser}`;
+            document.getElementById('welcome-title').innerText = `Welcome back, ${currentUser}! 👋`;
+
+            // Carrega dados específicos deste usuário no localStorage de forma independente
+            const userStore = localStorage.getItem(`lingo_data_${currentUser}`);
+            if (userStore) {
+                userData = JSON.parse(userStore);
+            } else {
+                saveUserData(); // Cria dados iniciais para o novo usuário
+            }
+            updateStatsUI();
+        }
+
+        function saveUserData() {
+            if (!currentUser) return;
+            localStorage.setItem(`lingo_data_${currentUser}`, JSON.stringify(userData));
+        }
+
+        function updateStatsUI() {
+            document.getElementById('stat-streak').innerText = `${userData.streak} dias`;
+            document.getElementById('stat-coins').innerText = userData.coins;
+            document.getElementById('stat-xp').innerText = `${userData.xp} XP`;
+        }
+
+        let currentTab = 'dashboard';
+        function switchTab(tabId) {
+            currentTab = tabId;
+            const tabs = ['dashboard', 'modules', 'flashcards', 'chat', 'shop'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (el) el.classList.add('hidden');
+                if (nav) {
+                    nav.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/20');
+                    nav.classList.add('text-slate-300', 'hover:bg-slate-700/50', 'hover:text-white');
+                }
+            });
+
+            const activeEl = document.getElementById(`tab-${tabId}`);
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeEl) activeEl.classList.remove('hidden');
+            if (activeNav) {
+                activeNav.classList.remove('text-slate-300', 'hover:bg-slate-700/50', 'hover:text-white');
+                activeNav.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/20');
+            }
+        }
+
+        // Flashcards Logic
+        const flashcards = [
+            { front: "To break the ice", back: "Quebrar o gelo", example: "He told a joke to break the ice." },
+            { front: "Piece of cake", back: "Moleza / Muito fácil", example: "The exam was a piece of cake." },
+            { front: "Cost an arm and a leg", back: "Custar uma fortuna", example: "That new smartphone costs an arm and a leg." }
+        ];
+        let currentCardIndex = 0;
+        let isFlipped = false;
+
+        function flipCard() {
+            const inner = document.getElementById('flashcard-inner');
+            isFlipped = !isFlipped;
+            if (isFlipped) inner.classList.add('rotate-y-180');
+            else inner.classList.remove('rotate-y-180');
+        }
+
+        function nextCard() {
+            if (isFlipped) flipCard();
+            currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+            updateCardContent();
+        }
+
+        function prevCard() {
+            if (isFlipped) flipCard();
+            currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+            updateCardContent();
+        }
+
+        function updateCardContent() {
+            const card = flashcards[currentCardIndex];
+            document.getElementById('fc-front').innerText = card.front;
+            document.getElementById('fc-back').innerText = card.back;
+            document.getElementById('fc-example').innerText = `"${card.example}"`;
+        }
+
+        function speakCurrentCard() {
+            speakText(flashcards[currentCardIndex].front, 'en-US');
+        }
+
+        function speakText(text, lang = 'en-US') {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang;
+                utterance.rate = 0.95;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Speech Recognition
+        let recognition = null;
+        let isRecording = false;
+
+        function toggleSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Seu navegador não suporta reconhecimento de voz.');
+                return;
+            }
+
+            const micBtn = document.getElementById('mic-btn');
+            const micIcon = document.getElementById('mic-icon');
+            const input = document.getElementById('chat-input');
+
+            if (!isRecording) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => {
+                    isRecording = true;
+                    micBtn.classList.add('bg-red-500/20', 'border-red-500', 'text-red-400');
+                    micIcon.classList.remove('fa-microphone');
+                    micIcon.classList.add('fa-microphone-slash', 'animate-pulse');
+                    input.placeholder = "Listening your speech...";
+                };
+
+                recognition.onresult = (event) => {
+                    input.value = event.results[0][0].transcript;
+                };
+
+                recognition.onerror = () => { stopRecognitionUI(); };
+                recognition.onend = () => {
+                    stopRecognitionUI();
+                    if (input.value.trim() !== '') sendChatMessage();
+                };
+
+                recognition.start();
+            } else {
+                if (recognition) recognition.stop();
+            }
+        }
+
+        function stopRecognitionUI() {
+            isRecording = false;
+            const micBtn = document.getElementById('mic-btn');
+            const micIcon = document.getElementById('mic-icon');
+            const input = document.getElementById('chat-input');
+            micBtn.classList.remove('bg-red-500/20', 'border-red-500', 'text-red-400');
+            micIcon.classList.remove('fa-microphone-slash', 'animate-pulse');
+            micIcon.classList.add('fa-microphone');
+            input.placeholder = "Digite sua dúvida ou frase em inglês...";
+        }
+
+        // Chat with AI Logic
+        async function sendChatMessage() {
+            if (!currentUser) {
+                alert('Faça login com seu nome primeiro.');
+                return;
+            }
+
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatMessages = document.getElementById('chat-messages');
+
+            chatMessages.innerHTML += `
+                <div class="flex items-start justify-end space-x-3">
+                    <div class="bg-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-sm text-sm max-w-[80%] shadow-md">
+                        ${escapeHTML(message)}
+                    </div>
+                    <div class="w-8 h-8 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center text-sm flex-shrink-0 border border-indigo-500/30">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            chatMessages.innerHTML += `
+                <div id="${loadingId}" class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-sm flex-shrink-0 border border-emerald-500/30">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700 text-slate-400 p-3.5 rounded-2xl rounded-tl-sm text-sm italic">
+                        Analisando e traduzindo para ${currentUser}...
+                    </div>
+                </div>
+            `;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            setTimeout(() => {
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                let englishText = `Great job, ${currentUser}! Your sentence is natural and grammatically correct. Keep practicing every day.`;
+                let portugueseText = `Excelente trabalho, ${currentUser}! Sua frase é natural e gramaticamente correta. Continue praticando todos os dias.`;
+
+                const lowerMsg = message.toLowerCase();
+                if (lowerMsg.includes('como se diz') || lowerMsg.includes('tradução') || lowerMsg.includes('significa')) {
+                    englishText = `That translates to English as "key" or similar term depending on the context. Great vocabulary question!`;
+                    portugueseText = `Isso se traduz para o inglês como "key" ou termo similar dependendo do contexto. Ótima pergunta de vocabulário!`;
+                }
+
+                speakText(englishText, 'en-US');
+
+                chatMessages.innerHTML += `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-sm flex-shrink-0 border border-emerald-500/30">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="bg-slate-800 border border-slate-700 text-slate-200 p-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[80%] shadow-md flex flex-col space-y-2">
+                            <div class="flex justify-between items-start">
+                                <p class="font-medium text-white">${englishText}</p>
+                                <button onclick="speakText('${englishText.replace(/'/g, "\\'")}', 'en-US')" class="text-xs text-indigo-400 hover:text-indigo-300 p-1 ml-2" title="Ouvir áudio">
+                                    <i class="fa-solid fa-volume-high text-base"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-indigo-300 italic border-t border-slate-700/80 pt-2">💡 Tradução & Dica: ${portugueseText}</p>
+                        </div>
+                    </div>
+                `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        }
+
+        function handleChatKey(event) {
+            if (event.key === 'Enter') sendChatMessage();
+        }
+
+        function clearChat() {
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-sm flex-shrink-0 border border-emerald-500/30">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-800 border border-slate-700 text-slate-200 p-3.5 rounded-2xl rounded-tl-sm text-sm max-w-[80%] shadow-md">
+                        Conversa limpa! Como posso ajudar você, ${currentUser}?
+                    </div>
+                </div>
+            `;
+        }
+
+        function startLesson(name) {
+            if (!currentUser) return;
+            alert(`Lição ${name} concluída por ${currentUser}!`);
+            userData.coins += 25;
+            userData.xp += 50;
+            saveUserData();
+            updateStatsUI();
+        }
+
+        function buyItem(cost) {
+            if (!currentUser) return;
+            if (userData.coins >= cost) {
+                userData.coins -= cost;
+                saveUserData();
+                updateStatsUI();
+                alert('Item resgatado com sucesso para seu perfil!');
+            } else {
+                alert('Moedas insuficientes no seu saldo.');
+            }
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+    </script>
+</body>
+</html>
